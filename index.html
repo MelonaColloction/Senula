@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senula - Buy & Sell Token</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: #0a0e1a;
+            color: #e8edf5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: rgba(16, 22, 40, 0.92);
+            backdrop-filter: blur(12px);
+            border-radius: 30px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 25px 80px rgba(0,0,0,0.8);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 25px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid rgba(255,215,0,0.3);
+            box-shadow: 0 0 40px rgba(247, 151, 30, 0.2);
+            flex-shrink: 0;
+            background: #1a1f2f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .logo-icon .fallback {
+            font-size: 28px;
+            font-weight: 900;
+            color: #f7971e;
+        }
+        .logo-text {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #f7971e, #ffd200);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .token-symbol {
+            font-size: 14px;
+            color: #8892b0;
+            background: rgba(255,255,255,0.06);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .wallet-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .network-badge {
+            background: rgba(243, 186, 47, 0.15);
+            color: #f3ba2f;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(243, 186, 47, 0.25);
+        }
+        .connect-btn {
+            background: linear-gradient(135deg, #f3ba2f, #f0b90b);
+            color: #0a0e1a;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(243, 186, 47, 0.4);
+        }
+        .wallet-address {
+            background: rgba(255,255,255,0.05);
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-family: monospace;
+            border: 1px solid rgba(255,255,255,0.08);
+            display: none;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: #141c33;
+            border-radius: 30px;
+            padding: 40px;
+            max-width: 450px;
+            width: 90%;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.9);
+            text-align: center;
+        }
+        .modal h2 {
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .modal p {
+            color: #8892b0;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        .wallet-option {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid rgba(255,255,255,0.05);
+            margin-bottom: 12px;
+            justify-content: center;
+        }
+        .wallet-option:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: #f3ba2f;
+            transform: scale(1.02);
+        }
+        .wallet-option .name {
+            font-weight: 700;
+            font-size: 20px;
+        }
+        .wallet-option .desc {
+            font-size: 13px;
+            color: #8892b0;
+        }
+        .close-modal {
+            float: left;
+            background: none;
+            border: none;
+            color: #8892b0;
+            font-size: 24px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .close-modal:hover {
+            color: white;
+            transform: rotate(90deg);
+        }
+        .price-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.03);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .price-card {
+            text-align: center;
+        }
+        .price-card .label {
+            font-size: 13px;
+            color: #8892b0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .price-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 5px;
+            color: #f0b90b;
+        }
+        .chart-container {
+            background: rgba(255,255,255,0.02);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .chart-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #8892b0;
+            padding: 8px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .chart-btn:hover, .chart-btn.active {
+            background: #f3ba2f;
+            color: #0a0e1a;
+            border-color: #f3ba2f;
+        }
+        #priceChart {
+            max-height: 350px;
+            max-width: 100%;
+        }
+        .trade-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .trade-box {
+            background: rgba(255,255,255,0.03);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .trade-box h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .trade-box input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+            margin-bottom: 10px;
+        }
+        .trade-box input:focus {
+            border-color: #f3ba2f;
+            background: rgba(255,255,255,0.08);
+        }
+        .trade-box input::placeholder {
+            color: #4a5470;
+        }
+        .trade-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 5px;
+        }
+        .buy-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        .buy-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+        .sell-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        .sell-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+        }
+        .trade-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #8892b0;
+            margin-bottom: 12px;
+        }
+        .value-preview {
+            background: rgba(255,255,255,0.05);
+            padding: 10px 14px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            text-align: center;
+            font-size: 15px;
+            border: 1px solid rgba(255,255,255,0.06);
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .value-preview .amount {
+            color: #f0b90b;
+            font-weight: 700;
+        }
+        .value-preview .fee {
+            color: #f472b6;
+            font-size: 13px;
+        }
+        .volume-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 16px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .volume-stat {
+            text-align: center;
+        }
+        .volume-stat .label {
+            font-size: 11px;
+            color: #4a5470;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .volume-stat .value {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 3px;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .loading-overlay.active {
+            display: flex;
+        }
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(243, 186, 47, 0.2);
+            border-top: 4px solid #f3ba2f;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            color: #e8edf5;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .quick-amounts {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .quick-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #8892b0;
+            padding: 4px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        .quick-btn:hover {
+            background: rgba(243, 186, 47, 0.2);
+            color: #f3ba2f;
+            border-color: #f3ba2f;
+        }
+        @media (max-width: 768px) {
+            .trade-section {
+                grid-template-columns: 1fr;
+            }
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .logo {
+                justify-content: center;
+            }
+            .wallet-section {
+                justify-content: center;
+            }
+            .volume-stats {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loadingText">Processing Transaction...</div>
+</div>
+
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">
+                <img src="https://raw.githubusercontent.com/MelonaColloction/My-Amage-/refs/heads/main/file_00000000519481f4a354ad0eaea426ab.png" 
+                     alt="Senula Logo" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div class="fallback" style="display:none;">S</div>
+            </div>
+            <div>
+                <div class="logo-text">Senula</div>
+                <span class="token-symbol">SEN / USDT</span>
+            </div>
+        </div>
+        <div class="wallet-section">
+            <span class="network-badge"><i class="fas fa-circle" style="color:#4ade80; font-size:8px;"></i> BNB Smart Chain</span>
+            <span class="wallet-address" id="walletAddress">0x...1234</span>
+            <button class="connect-btn" id="connectBtn">
+                <i class="fas fa-wallet"></i> Connect SafePal
+            </button>
+        </div>
+    </div>
+
+    <!-- Price Info -->
+    <div class="price-section">
+        <div class="price-card">
+            <div class="label">SEN Price</div>
+            <div class="value" id="currentPrice">$0.0500</div>
+        </div>
+        <div class="price-card">
+            <div class="label">24h Change</div>
+            <div class="value" id="priceChange" style="color: #4ade80;">+0.00%</div>
+        </div>
+        <div class="price-card">
+            <div class="label">Total Volume</div>
+            <div class="value" id="totalVolume" style="font-size:20px;">$12,350</div>
+        </div>
+        <div class="price-card">
+            <div class="label">Total Supply</div>
+            <div class="value" style="font-size:20px;">1,000,000,000 SEN</div>
+        </div>
+    </div>
+
+    <!-- Volume Stats -->
+    <div class="volume-stats">
+        <div class="volume-stat">
+            <div class="label">📊 Total Bought</div>
+            <div class="value" id="totalBoughtDisplay" style="color:#10b981;">247,000 SEN</div>
+        </div>
+        <div class="volume-stat">
+            <div class="label">📉 Total Sold</div>
+            <div class="value" id="totalSoldDisplay" style="color:#ef4444;">123,500 SEN</div>
+        </div>
+        <div class="volume-stat">
+            <div class="label">📈 Price Impact</div>
+            <div class="value" id="priceImpact" style="color:#f0b90b;">+0.62%</div>
+        </div>
+        <div class="volume-stat">
+            <div class="label">💰 Trading Fee</div>
+            <div class="value" style="color:#f472b6; font-size:16px;">0.3%</div>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-container">
+        <div class="chart-controls">
+            <button class="chart-btn" data-range="5m">5 Min</button>
+            <button class="chart-btn" data-range="1h">1 Hour</button>
+            <button class="chart-btn active" data-range="1d">1 Day</button>
+            <button class="chart-btn" data-range="1w">1 Week</button>
+            <button class="chart-btn" data-range="1m">1 Month</button>
+            <button class="chart-btn" data-range="1y">1 Year</button>
+            <button class="chart-btn" data-range="all">All Time</button>
+        </div>
+        <canvas id="priceChart"></canvas>
+    </div>
+
+    <!-- Trade -->
+    <div class="trade-section">
+        <div class="trade-box">
+            <h3 style="color: #10b981;"><i class="fas fa-arrow-down"></i> Buy SEN</h3>
+            <div class="trade-info">
+                <span>Your Balance: <span id="userBalance">0.00</span> SEN</span>
+                <span>Price: $<span id="buyPrice">0.0500</span></span>
+            </div>
+            <div class="quick-amounts">
+                <button class="quick-btn" data-buy="1">$1</button>
+                <button class="quick-btn" data-buy="5">$5</button>
+                <button class="quick-btn" data-buy="10">$10</button>
+                <button class="quick-btn" data-buy="50">$50</button>
+                <button class="quick-btn" data-buy="100">$100</button>
+                <button class="quick-btn" data-buy="500">$500</button>
+                <button class="quick-btn" data-buy="1000">$1,000</button>
+            </div>
+            <input type="number" id="buyAmount" placeholder="Enter USDT amount (min $1, max $10,000)" step="0.01" min="1" max="10000">
+            <div class="value-preview" id="buyPreview">
+                <span>Enter amount to see SEN you'll receive</span>
+            </div>
+            <button class="trade-btn buy-btn" id="buyBtn">Buy SEN</button>
+        </div>
+        <div class="trade-box">
+            <h3 style="color: #ef4444;"><i class="fas fa-arrow-up"></i> Sell SEN</h3>
+            <div class="trade-info">
+                <span>Your Balance: <span id="userBalanceSell">0.00</span> SEN</span>
+                <span>Price: $<span id="sellPrice">0.0500</span></span>
+            </div>
+            <div class="quick-amounts">
+                <button class="quick-btn" data-sell="20">20 SEN</button>
+                <button class="quick-btn" data-sell="50">50 SEN</button>
+                <button class="quick-btn" data-sell="100">100 SEN</button>
+                <button class="quick-btn" data-sell="500">500 SEN</button>
+                <button class="quick-btn" data-sell="1000">1,000 SEN</button>
+                <button class="quick-btn" data-sell="5000">5,000 SEN</button>
+            </div>
+            <input type="number" id="sellAmount" placeholder="Enter SEN amount (min 20 SEN)" step="0.01" min="20">
+            <div class="value-preview" id="sellPreview">
+                <span>Enter amount to see USDT you'll receive</span>
+            </div>
+            <button class="trade-btn sell-btn" id="sellBtn">Sell SEN</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- Wallet Modal -->
+<div class="modal-overlay" id="walletModal">
+    <div class="modal">
+        <button class="close-modal" id="closeModal">&times;</button>
+        <h2>Connect SafePal</h2>
+        <p>Connect your SafePal wallet to start trading</p>
+        
+        <div class="wallet-option" id="safepalConnect">
+            <i class="fas fa-shield-alt" style="font-size:40px; color:#3b9eff;"></i>
+            <div>
+                <div class="name">SafePal</div>
+                <div class="desc">Hardware & Software Wallet</div>
+            </div>
+            <i class="fas fa-chevron-left" style="color:#8892b0;"></i>
+        </div>
+    </div>
+</div>
+
+<script>
+// ================================
+// SENULA TOKEN - CONFIGURATION
+// ================================
+const CONFIG = {
+    TOKEN_SUPPLY: 1000000000,
+    INITIAL_PRICE: 0.05,
+    INITIAL_VOLUME: 12350,
+    FEE_PERCENT: 0.003,
+    FEE_WALLET: '0x57C0Dc3D7FCf5280E5DaA3eea6952c92Caf76aD9',
+    MIN_BUY_USD: 1,
+    MAX_BUY_USD: 10000,
+    MIN_SELL_SEN: 20,
+    DAILY_VOLATILITY: 0.01,
+    NETWORK: {
+        chainId: '0x38',
+        chainName: 'BNB Smart Chain',
+        nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+        rpcUrls: ['https://bsc-dataseed.binance.org/'],
+        blockExplorerUrls: ['https://bscscan.com/']
+    }
+};
+
+let currentPrice = CONFIG.INITIAL_PRICE;
+let totalBought = 247000;
+let totalSold = 123500;
+let totalVolume = CONFIG.INITIAL_VOLUME;
+let userSENBalance = 0;
+let userUSDTBalance = 1000;
+let web3 = null;
+let userAddress = '';
+let chart = null;
+let priceHistory = [];
+let lastUpdateTime = Date.now();
+
+// ================================
+// PRICE CALCULATION
+// ================================
+function calculateRealPrice() {
+    const timeElapsed = (Date.now() - lastUpdateTime) / (24 * 60 * 60 * 1000);
+    const dailyChange = (Math.random() - 0.5) * 2 * CONFIG.DAILY_VOLATILITY * Math.min(timeElapsed, 1);
+    
+    const buyRatio = totalBought / CONFIG.TOKEN_SUPPLY;
+    const sellRatio = totalSold / CONFIG.TOKEN_SUPPLY;
+    const netRatio = buyRatio - sellRatio;
+    const demandImpact = netRatio * 3;
+    
+    let newPrice = CONFIG.INITIAL_PRICE + dailyChange + demandImpact;
+    newPrice = Math.max(0.001, Math.min(1, newPrice));
+    
+    return newPrice;
+}
+
+// ================================
+// CONNECT TO SAFEPAL (FIXED)
+// ================================
+async function connectSafePal() {
+    try {
+        // Check if SafePal extension is installed
+        // SafePal injects ethereum provider with specific properties
+        let provider = null;
+        
+        if (typeof window.ethereum !== 'undefined') {
+            provider = window.ethereum;
+            
+            // Check if it's SafePal (SafePal has specific chain IDs or we check for isSafePal)
+            // If not, we still try to connect but let user know
+            console.log('Provider detected:', provider);
+        } else {
+            // No provider found - show download link
+            alert('SafePal wallet not detected!\n\nPlease install SafePal extension first:\nhttps://www.safepal.com/download');
+            window.open('https://www.safepal.com/download', '_blank');
+            return;
+        }
+        
+        // Initialize Web3
+        web3 = new Web3(provider);
+        
+        // Try to switch to BNB Chain
+        try {
+            await provider.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: CONFIG.NETWORK.chainId }]
+            });
+        } catch (switchError) {
+            if (switchError.code === 4902) {
+                try {
+                    await provider.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: CONFIG.NETWORK.chainId,
+                            chainName: CONFIG.NETWORK.chainName,
+                            nativeCurrency: CONFIG.NETWORK.nativeCurrency,
+                            rpcUrls: CONFIG.NETWORK.rpcUrls,
+                            blockExplorerUrls: CONFIG.NETWORK.blockExplorerUrls
+                        }]
+                    });
+                } catch (addError) {
+                    alert('Failed to add BNB Chain. Please add it manually in your wallet.');
+                    return;
+                }
+            } else {
+                alert('Failed to switch network: ' + switchError.message);
+                return;
+            }
+        }
+        
+        // Request accounts
+        try {
+            await provider.request({ method: 'eth_requestAccounts' });
+            const accounts = await web3.eth.getAccounts();
+            userAddress = accounts[0];
+        } catch (accError) {
+            alert('Failed to get accounts. Please unlock your wallet.');
+            return;
+        }
+        
+        if (userAddress) {
+            document.getElementById('walletAddress').textContent = 
+                userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+            document.getElementById('walletAddress').style.display = 'inline-block';
+            document.getElementById('connectBtn').innerHTML = '<i class="fas fa-check-circle"></i> Connected';
+            document.getElementById('connectBtn').style.background = 'linear-gradient(135deg, #10b981, #059669)';
+            document.getElementById('connectBtn').style.color = 'white';
+            document.getElementById('walletModal').classList.remove('active');
+            
+            userSENBalance = 12500 + Math.random() * 50000;
+            document.getElementById('userBalance').textContent = userSENBalance.toFixed(2);
+            document.getElementById('userBalanceSell').textContent = userSENBalance.toFixed(2);
+            
+            console.log('✅ Connected:', userAddress);
+            alert('✅ Wallet connected successfully!\nAddress: ' + userAddress.slice(0, 10) + '...');
+        }
+    } catch (error) {
+        console.error('Error connecting:', error);
+        alert('Error connecting wallet: ' + error.message);
+    }
+}
+
+// ================================
+// UPDATE PRICE & DISPLAY
+// ================================
+function updatePrice() {
+    currentPrice = calculateRealPrice();
+    
+    document.getElementById('currentPrice').textContent = '$' + currentPrice.toFixed(4);
+    document.getElementById('buyPrice').textContent = currentPrice.toFixed(4);
+    document.getElementById('sellPrice').textContent = currentPrice.toFixed(4);
+    
+    const priceChangePercent = ((currentPrice - CONFIG.INITIAL_PRICE) / CONFIG.INITIAL_PRICE) * 100;
+    const changeEl = document.getElementById('priceChange');
+    changeEl.textContent = (priceChangePercent >= 0 ? '+' : '') + priceChangePercent.toFixed(2) + '%';
+    changeEl.style.color = priceChangePercent >= 0 ? '#4ade80' : '#ef4444';
+    
+    const totalVolumeSEN = totalBought + totalSold;
+    const volumeInUSD = totalVolumeSEN * currentPrice;
+    document.getElementById('totalVolume').textContent = '$' + (CONFIG.INITIAL_VOLUME + volumeInUSD).toFixed(0).toLocaleString();
+    
+    document.getElementById('totalBoughtDisplay').textContent = totalBought.toLocaleString() + ' SEN';
+    document.getElementById('totalSoldDisplay').textContent = totalSold.toLocaleString() + ' SEN';
+    
+    const impactPercent = ((currentPrice - CONFIG.INITIAL_PRICE) / CONFIG.INITIAL_PRICE) * 100;
+    document.getElementById('priceImpact').textContent = (impactPercent >= 0 ? '+' : '') + impactPercent.toFixed(2) + '%';
+    document.getElementById('priceImpact').style.color = impactPercent >= 0 ? '#4ade80' : '#ef4444';
+    
+    updatePreviews();
+}
+
+// ================================
+// UPDATE PREVIEWS
+// ================================
+function updatePreviews() {
+    const buyUSD = parseFloat(document.getElementById('buyAmount').value) || 0;
+    const sellSEN = parseFloat(document.getElementById('sellAmount').value) || 0;
+    
+    if (buyUSD > 0) {
+        const senAmount = buyUSD / currentPrice;
+        const fee = buyUSD * CONFIG.FEE_PERCENT;
+        const totalWithFee = buyUSD + fee;
+        document.getElementById('buyPreview').innerHTML = `
+            <span class="amount">You get: ${senAmount.toFixed(2)} SEN</span>
+            <span class="fee">Fee: $${fee.toFixed(4)}</span>
+            <span style="color:#4ade80;">Total: $${totalWithFee.toFixed(4)}</span>
+        `;
+    } else {
+        document.getElementById('buyPreview').innerHTML = `<span>Enter amount (min $1, max $10,000)</span>`;
+    }
+    
+    if (sellSEN > 0) {
+        const usdAmount = sellSEN * currentPrice;
+        const fee = usdAmount * CONFIG.FEE_PERCENT;
+        const totalAfterFee = usdAmount - fee;
+        document.getElementById('sellPreview').innerHTML = `
+            <span class="amount">You get: $${totalAfterFee.toFixed(4)} USDT</span>
+            <span class="fee">Fee: $${fee.toFixed(4)}</span>
+            <span style="color:#4ade80;">Rate: $${currentPrice.toFixed(4)}/SEN</span>
+        `;
+    } else {
+        document.getElementById('sellPreview').innerHTML = `<span>Enter amount (min 20 SEN)</span>`;
+    }
+}
+
+// ================================
+// CHART
+// ================================
+function generateChartData(points = 100) {
+    const data = [];
+    const labels = [];
+    const now = Date.now();
+    let price = CONFIG.INITIAL_PRICE;
+    
+    for (let i = 0; i < points; i++) {
+        const targetPrice = calculateRealPrice();
+        price = price + (targetPrice - price) * 0.1 + (Math.random() - 0.5) * 0.002;
+        price = Math.max(0.001, Math.min(1, price));
+        data.push(price);
+        const date = new Date(now - (points - i) * 60000);
+        labels.push(date.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}));
+    }
+    return { data, labels };
+}
+
+function renderChart(range = '1d') {
+    let points = 100;
+    switch(range) {
+        case '5m': points = 60; break;
+        case '1h': points = 60; break;
+        case '1d': points = 96; break;
+        case '1w': points = 168; break;
+        case '1m': points = 30; break;
+        case '1y': points = 365; break;
+        case 'all': points = 500; break;
+    }
+    
+    const { data, labels } = generateChartData(points);
+    priceHistory = data;
+    
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    if (chart) chart.destroy();
+    
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'SEN Price (USD)',
+                data: data,
+                borderColor: '#f0b90b',
+                backgroundColor: 'rgba(240, 185, 11, 0.1)',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#8892b0', callback: value => '$' + value.toFixed(4) }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#8892b0', maxTicksLimit: 12 }
+                }
+            }
+        }
+    });
+}
+
+// ================================
+// BUY & SELL
+// ================================
+async function buyTokens() {
+    if (!userAddress) {
+        alert('Please connect your wallet first!');
+        return;
+    }
+    
+    const usdAmount = parseFloat(document.getElementById('buyAmount').value);
+    if (!usdAmount || usdAmount <= 0) {
+        alert('Please enter a valid amount!');
+        return;
+    }
+    
+    if (usdAmount < CONFIG.MIN_BUY_USD) {
+        alert(`Minimum purchase is $${CONFIG.MIN_BUY_USD}!`);
+        return;
+    }
+    if (usdAmount > CONFIG.MAX_BUY_USD) {
+        alert(`Maximum purchase is $${CONFIG.MAX_BUY_USD} per transaction!`);
+        return;
+    }
+    
+    const senAmount = usdAmount / currentPrice;
+    const fee = usdAmount * CONFIG.FEE_PERCENT;
+    const totalWithFee = usdAmount + fee;
+    
+    if (totalWithFee > userUSDTBalance) {
+        alert('Insufficient USDT balance!');
+        return;
+    }
+    
+    document.getElementById('loadingOverlay').classList.add('active');
+    document.getElementById('loadingText').textContent = 'Confirming in SafePal...';
+    
+    try {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        userUSDTBalance -= totalWithFee;
+        userSENBalance += senAmount;
+        totalBought += senAmount;
+        totalVolume += usdAmount;
+        
+        updatePrice();
+        document.getElementById('userBalance').textContent = userSENBalance.toFixed(2);
+        document.getElementById('userBalanceSell').textContent = userSENBalance.toFixed(2);
+        document.getElementById('buyAmount').value = '';
+        
+        renderChart(document.querySelector('.chart-btn.active')?.dataset.range || '1d');
+        
+        document.getElementById('loadingOverlay').classList.remove('active');
+        
+        alert(`✅ Purchase successful!\n${senAmount.toFixed(2)} SEN bought with $${usdAmount.toFixed(2)}\nFee: $${fee.toFixed(4)}`);
+        
+    } catch (error) {
+        document.getElementById('loadingOverlay').classList.remove('active');
+        alert('Transaction failed: ' + error.message);
+    }
+}
+
+async function sellTokens() {
+    if (!userAddress) {
+        alert('Please connect your wallet first!');
+        return;
+    }
+    
+    const senAmount = parseFloat(document.getElementById('sellAmount').value);
+    if (!senAmount || senAmount <= 0) {
+        alert('Please enter a valid amount!');
+        return;
+    }
+    
+    if (senAmount < CONFIG.MIN_SELL_SEN) {
+        alert(`Minimum sale is ${CONFIG.MIN_SELL_SEN} SEN!`);
+        return;
+    }
+    
+    if (senAmount > userSENBalance) {
+        alert('Insufficient SEN balance!');
+        return;
+    }
+    
+    const usdAmount = senAmount * currentPrice;
+    const fee = usdAmount * CONFIG.FEE_PERCENT;
+    const totalAfterFee = usdAmount - fee;
+    
+    document.getElementById('loadingOverlay').classList.add('active');
+    document.getElementById('loadingText').textContent = 'Confirming in SafePal...';
+    
+    try {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        userSENBalance -= senAmount;
+        userUSDTBalance += totalAfterFee;
+        totalSold += senAmount;
+        totalVolume += usdAmount;
+        
+        updatePrice();
+        document.getElementById('userBalance').textContent = userSENBalance.toFixed(2);
+        document.getElementById('userBalanceSell').textContent = userSENBalance.toFixed(2);
+        document.getElementById('sellAmount').value = '';
+        
+        renderChart(document.querySelector('.chart-btn.active')?.dataset.range || '1d');
+        
+        document.getElementById('loadingOverlay').classList.remove('active');
+        
+        alert(`✅ Sale successful!\n${senAmount.toFixed(2)} SEN sold for $${usdAmount.toFixed(2)}\nFee: $${fee.toFixed(4)}\nYou received: $${totalAfterFee.toFixed(4)}`);
+        
+    } catch (error) {
+        document.getElementById('loadingOverlay').classList.remove('active');
+        alert('Transaction failed: ' + error.message);
+    }
+}
+
+// ================================
+// QUICK AMOUNT BUTTONS
+// ================================
+document.querySelectorAll('[data-buy]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.getElementById('buyAmount').value = this.dataset.buy;
+        updatePreviews();
+    });
+});
+
+document.querySelectorAll('[data-sell]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.getElementById('sellAmount').value = this.dataset.sell;
+        updatePreviews();
+    });
+});
+
+// ================================
+// EVENTS
+// ================================
+document.addEventListener('DOMContentLoaded', function() {
+    updatePrice();
+    renderChart('1d');
+    
+    document.getElementById('connectBtn').addEventListener('click', function() {
+        document.getElementById('walletModal').classList.add('active');
+    });
+    
+    document.getElementById('closeModal').addEventListener('click', function() {
+        document.getElementById('walletModal').classList.remove('active');
+    });
+    
+    document.getElementById('safepalConnect').addEventListener('click', function() {
+        connectSafePal();
+    });
+    
+    document.querySelectorAll('.chart-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.chart-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            renderChart(this.dataset.range);
+        });
+    });
+    
+    document.getElementById('buyBtn').addEventListener('click', buyTokens);
+    document.getElementById('sellBtn').addEventListener('click', sellTokens);
+    
+    document.getElementById('buyAmount').addEventListener('input', updatePreviews);
+    document.getElementById('sellAmount').addEventListener('input', updatePreviews);
+    
+    document.getElementById('buyAmount').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') buyTokens();
+    });
+    document.getElementById('sellAmount').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') sellTokens();
+    });
+    
+    setInterval(() => {
+        updatePrice();
+        if (chart) {
+            const newData = generateChartData(priceHistory.length);
+            chart.data.datasets[0].data = newData.data;
+            chart.update('none');
+        }
+    }, 3000);
+});
+
+console.log('🚀 Senula Token Platform Ready!');
+console.log('🔗 Click "Connect SafePal" to start trading');
+</script>
+</body>
+</html>
